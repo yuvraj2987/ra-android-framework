@@ -5335,6 +5335,7 @@ package android.content {
     field public static final int CONTEXT_IGNORE_SECURITY = 2; // 0x2
     field public static final int CONTEXT_INCLUDE_CODE = 1; // 0x1
     field public static final int CONTEXT_RESTRICTED = 4; // 0x4
+    field public static final java.lang.String CURRENT_TIME_SERVICE = "current_time_service";
     field public static final java.lang.String DEVICE_POLICY_SERVICE = "device_policy";
     field public static final java.lang.String DOWNLOAD_SERVICE = "download";
     field public static final java.lang.String DROPBOX_SERVICE = "dropbox";
@@ -9838,6 +9839,19 @@ package android.hardware {
   public abstract interface SensorEventListener {
     method public abstract void onAccuracyChanged(android.hardware.Sensor, int);
     method public abstract void onSensorChanged(android.hardware.SensorEvent);
+  }
+
+  public class SensorEventLog extends android.os.AsyncTask {
+    ctor public SensorEventLog();
+    ctor public SensorEventLog(java.lang.String);
+    method protected java.lang.String doInBackground(java.lang.String...);
+    method protected void onPostExecute(java.lang.String);
+    field public static final java.lang.String ADD_LOG = "addLog";
+    field public static final java.lang.String REMOVE_LOG = "removeLog";
+    field public static final java.lang.String TAG = "SensorEventLog";
+    field public java.util.HashMap associatedSensors;
+    field public boolean loop_end;
+    field public java.lang.String message;
   }
 
   public abstract deprecated interface SensorListener {
@@ -15455,6 +15469,23 @@ package android.os {
     method public final synchronized android.os.CountDownTimer start();
   }
 
+  public class CurrentTime extends android.os.ICurrentTime.Stub {
+    ctor public CurrentTime(android.content.Context);
+    ctor public CurrentTime();
+    method public java.util.Map<java.lang.String, java.lang.String> getPidSensorMap();
+    method public java.lang.String getTime();
+    method public void sendMessage(java.lang.String);
+    field public static java.util.concurrent.ConcurrentHashMap log_pid_sensors;
+  }
+
+  public class CurrentTimeService {
+    method public android.os.ICurrentTime getCurrentTime();
+    method public static synchronized android.os.CurrentTimeService getCurrentTimeService();
+    method public java.util.Map<java.lang.String, java.lang.String> getPidSensorMap() throws android.os.RemoteException;
+    method public java.lang.String getTime() throws android.os.RemoteException;
+    method public void sendMessage(java.lang.String) throws android.os.RemoteException;
+  }
+
   public class DeadObjectException extends android.os.RemoteException {
     ctor public DeadObjectException();
   }
@@ -15716,6 +15747,19 @@ package android.os {
 
   public static abstract interface IBinder.DeathRecipient {
     method public abstract void binderDied();
+  }
+
+  public abstract interface ICurrentTime implements android.os.IInterface {
+    method public abstract java.util.Map getPidSensorMap() throws android.os.RemoteException;
+    method public abstract java.lang.String getTime() throws android.os.RemoteException;
+    method public abstract void sendMessage(java.lang.String) throws android.os.RemoteException;
+  }
+
+  public static abstract class ICurrentTime.Stub extends android.os.Binder implements android.os.ICurrentTime {
+    ctor public ICurrentTime.Stub();
+    method public android.os.IBinder asBinder();
+    method public static android.os.ICurrentTime asInterface(android.os.IBinder);
+    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
   }
 
   public abstract interface IInterface {

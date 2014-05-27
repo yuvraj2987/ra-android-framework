@@ -125,6 +125,7 @@ LOCAL_SRC_FILES += \
 	core/java/android/nfc/INfcAdapterExtras.aidl \
 	core/java/android/nfc/INfcTag.aidl \
 	core/java/android/os/ICancellationSignal.aidl \
+	core/java/android/os/ICurrentTime.aidl \
 	core/java/android/os/IHardwareService.aidl \
 	core/java/android/os/IMessenger.aidl \
 	core/java/android/os/INetworkManagementService.aidl \
