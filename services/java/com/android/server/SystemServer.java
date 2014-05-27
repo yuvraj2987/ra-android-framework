@@ -28,6 +28,7 @@ import android.content.pm.IPackageManager;
 import android.content.res.Configuration;
 import android.media.AudioService;
 import android.net.wifi.p2p.WifiP2pService;
+import android.os.CurrentTime;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.os.SchedulingPolicyService;
@@ -114,8 +115,6 @@ class ServerThread extends Thread {
                 : Integer.parseInt(factoryTestStr);
         final boolean headless = "1".equals(SystemProperties.get("ro.config.headless", "0"));
 
-        AccountManagerService accountManager = null;
-        ContentService contentService = null;
         LightsService lights = null;
         PowerManagerService power = null;
         BatteryService battery = null;
@@ -192,14 +191,14 @@ class ServerThread extends Thread {
             // The AccountManager must come before the ContentService
             try {
                 Slog.i(TAG, "Account Manager");
-                accountManager = new AccountManagerService(context);
-                ServiceManager.addService(Context.ACCOUNT_SERVICE, accountManager);
+                ServiceManager.addService(Context.ACCOUNT_SERVICE,
+                        new AccountManagerService(context));
             } catch (Throwable e) {
                 Slog.e(TAG, "Failure starting Account Manager", e);
             }
 
             Slog.i(TAG, "Content Manager");
-            contentService = ContentService.main(context,
+            ContentService.main(context,
                     factoryTest == SystemServer.FACTORY_TEST_LOW_LEVEL);
 
             Slog.i(TAG, "System Content Providers");
@@ -299,6 +298,16 @@ class ServerThread extends Thread {
             } catch (Throwable e) {
                 reportWtf("starting Accessibility Manager", e);
             }
+
+            try {
+                Slog.i("CSE622:ASST4", "Current Time Service");
+                ServiceManager.addService(Context.CURRENT_TIME_SERVICE,
+                        new CurrentTime(context));
+            } catch (Throwable e) {
+                reportWtf("starting Current Time Service", e);
+            }
+	  	
+
         }
 
         try {
@@ -465,20 +474,6 @@ class ServerThread extends Thread {
              */
             if (mountService != null) {
                 mountService.waitForAsecScan();
-            }
-
-            try {
-                if (accountManager != null)
-                    accountManager.systemReady();
-            } catch (Throwable e) {
-                reportWtf("making Account Manager Service ready", e);
-            }
-
-            try {
-                if (contentService != null)
-                    contentService.systemReady();
-            } catch (Throwable e) {
-                reportWtf("making Content Service ready", e);
             }
 
             try {

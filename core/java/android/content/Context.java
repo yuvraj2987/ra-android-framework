@@ -1954,7 +1954,12 @@ public abstract class Context {
      */
     public static final String SCHEDULING_POLICY_SERVICE = "scheduling_policy";
 
-    /**
+	/* 
+	 * CSE622:ASST4 : Current Time Service
+	*/
+	public static final String CURRENT_TIME_SERVICE = "current_time_service";
+    
+	/**
      * Determine whether the given permission is allowed for a particular
      * process and user ID running in the system.
      *

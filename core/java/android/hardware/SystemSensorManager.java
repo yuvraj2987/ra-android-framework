@@ -16,6 +16,10 @@
 
 package android.hardware;
 
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.Looper;
 import android.os.Process;
 import android.os.Handler;
@@ -24,9 +28,12 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
-
+import android.os.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
+ 
 
 /**
  * Sensor manager implementation that communicates with the built-in
@@ -54,6 +61,8 @@ public class SystemSensorManager extends SensorManager {
     // Looper associated with the context in which this instance was created.
     final Looper mMainLooper;
 
+    public static String TAG_PROJ = "CSE622:PROJ";
+    //private EventLog eventLog = null;// ENVENT_LOG
     /*-----------------------------------------------------------------------*/
 
     static private class SensorThread {
@@ -105,6 +114,8 @@ public class SystemSensorManager extends SensorManager {
                 final float[] values = new float[3];
                 final int[] status = new int[1];
                 final long timestamp[] = new long[1];
+                int count = 0;
+                
                 Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
 
                 if (!open()) {
@@ -120,7 +131,7 @@ public class SystemSensorManager extends SensorManager {
                 while (true) {
                     // wait for an event
                     final int sensor = sensors_data_poll(sQueue, values, status, timestamp);
-
+                    //Log.d("Unique",sensor+"");	
                     int accuracy = status[0];
                     synchronized (sListeners) {
                         if (sensor == -1 || sListeners.isEmpty()) {
@@ -140,12 +151,21 @@ public class SystemSensorManager extends SensorManager {
                         if (sensorObject != null) {
                             // report the sensor event to all listeners that
                             // care about it.
+                        	
                             final int size = sListeners.size();
+                            //Log.d(ASST4_TAG+"SIZE","sListeners.size= "+ size );  
                             for (int i=0 ; i<size ; i++) {
                                 ListenerDelegate listener = sListeners.get(i);
                                 if (listener.hasSensor(sensorObject)) {
                                     // this is asynchronous (okay to call
                                     // with sListeners lock held).
+				/*satish--> */
+                               //Log.d(ASST4_TAG+"SIZE","Sensor : "+ sensorObject.getName() + " "+Process.myPid()+"size " + size );
+                        	if(sensorObject.getName().equals("Orientation Sensor") && count < 10 ){
+                        		Log.d(TAG_PROJ,Process.myPid() +" sensor power     usage: "+ sensorObject.getPower() +" sensor obj ="+sensorObject);
+                        		count++;
+                        	}
+ 				/*<--satish*/
                                     listener.onSensorChangedLocked(sensorObject,
                                             values, timestamp, accuracy);
                                 }
@@ -168,6 +188,8 @@ public class SystemSensorManager extends SensorManager {
         public SparseBooleanArray mFirstEvent = new SparseBooleanArray();
         public SparseIntArray mSensorAccuracies = new SparseIntArray();
 
+	//private final ArrayList<EventLog> mEventLogList = new ArrayList<EventLog>();
+
         ListenerDelegate(SensorEventListener listener, Sensor sensor, Handler handler) {
             mSensorEventListener = listener;
             Looper looper = (handler != null) ? handler.getLooper() : mMainLooper;
@@ -177,6 +199,8 @@ public class SystemSensorManager extends SensorManager {
             mHandler = new Handler(looper) {
                 @Override
                 public void handleMessage(Message msg) {
+ 
+                	
                     final SensorEvent t = (SensorEvent)msg.obj;
                     final int handle = t.sensor.getHandle();
 
@@ -250,7 +274,8 @@ public class SystemSensorManager extends SensorManager {
      */
     public SystemSensorManager(Looper mainLooper) {
         mMainLooper = mainLooper;
-
+	//eventLog = new EventLog(Process.myPid()); // ENVENT_LOG
+        Log.d(TAG_PROJ,"inside SystemSensorManager");
         synchronized(sListeners) {
             if (!sSensorModuleInitialized) {
                 sSensorModuleInitialized = true;
@@ -272,7 +297,7 @@ public class SystemSensorManager extends SensorManager {
                         sHandleToSensor.append(sensor.getHandle(), sensor);
                     }
                 } while (i>0);
-
+                
                 sPool = new SensorEventPool( sFullSensorsList.size()*2 );
                 sSensorThread = new SensorThread();
             }
@@ -310,11 +335,15 @@ public class SystemSensorManager extends SensorManager {
         return sensors_enable_sensor(sQueue, name, handle, SENSOR_DISABLE);
     }
 
+    
     /** @hide */
     @Override
     protected boolean registerListenerImpl(SensorEventListener listener, Sensor sensor,
             int delay, Handler handler) {
-        boolean result = true;
+       
+       boolean result = true;
+       if(sensor.getName().equals("")){}
+       Log.d(TAG_PROJ,"systemsensormanager registering listener for " + sensor.getName());   
         synchronized (sListeners) {
             // look for this listener in our list
             ListenerDelegate l = null;
@@ -355,29 +384,40 @@ public class SystemSensorManager extends SensorManager {
                 }
             }
         }
-
+        if(result){
+        	Log.d(TAG_PROJ+"result","inside result");
+		String message = SensorEventLog.ADD_LOG +","+Process.myPid()+","+sensor.getType();
+		new SensorEventLog().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);  //EVENT_LOG
+	}
         return result;
     }
 
     /** @hide */
     @Override
     protected void unregisterListenerImpl(SensorEventListener listener, Sensor sensor) {
-        synchronized (sListeners) {
+    	   
+    	synchronized (sListeners) {
             final int size = sListeners.size();
             for (int i=0 ; i<size ; i++) {
                 ListenerDelegate l = sListeners.get(i);
                 if (l.getListener() == listener) {
                     if (sensor == null) {
                         sListeners.remove(i);
+			
                         // disable all sensors for this listener
+			 
                         for (Sensor s : l.getSensors()) {
                             disableSensorLocked(s);
+			     String message = SensorEventLog.REMOVE_LOG +","+Process.myPid()+","+s.getType();
+			    new SensorEventLog().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message); //EVENT_LOG	
                         }
                     } else if (l.removeSensor(sensor) == 0) {
                         // if we have no more sensors enabled on this listener,
                         // take it off the list.
                         sListeners.remove(i);
                         disableSensorLocked(sensor);
+			 String message = SensorEventLog.REMOVE_LOG +","+Process.myPid()+","+sensor.getType();
+			new SensorEventLog().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);  //EVENT_LOG
                     }
                     break;
                 }

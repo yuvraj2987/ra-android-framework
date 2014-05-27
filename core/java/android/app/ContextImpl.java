@@ -72,6 +72,8 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.nfc.NfcManager;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.CurrentTime;
+import android.os.CurrentTimeService;
 import android.os.DropBoxManager;
 import android.os.Environment;
 import android.os.FileUtils;
@@ -260,6 +262,16 @@ class ContextImpl extends Context {
             }};
 
     static {
+        Log.i("CSE622:ASST4", "Registering current time service");
+        //registerService(CURRENT_TIME_SERVICE, new ServiceFetcher() {
+        //        public Object createService(ContextImpl ctx) {
+        //            return new CurrentTime(ctx);
+        //        }});
+        registerService(CURRENT_TIME_SERVICE, new ServiceFetcher() {
+                public Object createService(ContextImpl ctx) {
+                    return CurrentTimeService.getCurrentTimeService();
+                }});
+
         registerService(ACCESSIBILITY_SERVICE, new ServiceFetcher() {
                 public Object getService(ContextImpl ctx) {
                     return AccessibilityManager.getInstance(ctx);
